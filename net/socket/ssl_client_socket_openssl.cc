@@ -42,8 +42,10 @@ const size_t kMaxRecvBufferSize = 4096;
 const int kSessionCacheTimeoutSeconds = 60 * 60;
 const size_t kSessionCacheMaxEntires = 1024;
 
-// This method doesn't seemed to have made it into the OpenSSL headers.
+#if OPENSSL_VERSION_NUMBER < 0x1000100fL
+// This method was first included in OpenSSL 1.0.1.
 unsigned long SSL_CIPHER_get_id(const SSL_CIPHER* cipher) { return cipher->id; }
+#endif
 
 // Used for encoding the |connection_status| field of an SSLInfo object.
 int EncodeSSLConnectionStatus(int cipher_suite,
@@ -445,6 +447,12 @@ bool SSLClientSocketOpenSSL::Init() {
   options.ConfigureFlag(SSL_OP_NO_SSLv2, true);
   options.ConfigureFlag(SSL_OP_NO_SSLv3, !ssl_config_.ssl3_enabled);
   options.ConfigureFlag(SSL_OP_NO_TLSv1, !ssl_config_.tls1_enabled);
+#ifdef SSL_OP_NO_TLSv1_1
+  options.ConfigureFlag(SSL_OP_NO_TLSv1_1, true);
+#endif
+#ifdef SSL_OP_NO_TLSv1_2
+  options.ConfigureFlag(SSL_OP_NO_TLSv1_2, true);
+#endif
 
 #if defined(SSL_OP_NO_COMPRESSION)
   // If TLS was disabled also disable compression, to provide maximum site
